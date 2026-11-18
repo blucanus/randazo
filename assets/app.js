@@ -6,17 +6,6 @@
   if (!form) return;
 
   var alertBox = document.getElementById('form-alert');
-  var hiddenAcomp = form.querySelector('input[name="acompanantes"]');
-  var segButtons = form.querySelectorAll('.seg__btn');
-
-  // Selector de acompañantes
-  segButtons.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      segButtons.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
-      btn.setAttribute('aria-pressed', 'true');
-      hiddenAcomp.value = btn.getAttribute('data-value');
-    });
-  });
 
   var onlyDigits = function (v) { return (v || '').replace(/\D+/g, ''); };
 
@@ -76,11 +65,10 @@
       apellido: form.elements.apellido.value.trim(),
       dni: onlyDigits(form.elements.dni.value),
       email: form.elements.email.value.trim(),
-      acompanantes: Number(hiddenAcomp.value || 0),
       codigo: demoCode()
     };
 
-    // TODO producción: enviar `data` (+ whatsapp y novedades) a la API de eventos.hands.com.ar
+    // TODO producción: enviar `data` (+ whatsapp) a la API de eventos.hands.com.ar
     try { sessionStorage.setItem('gr100k_entrada', JSON.stringify(data)); } catch (err) { /* modo privado */ }
     window.location.href = '/gracias';
   });

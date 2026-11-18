@@ -10,14 +10,12 @@
     document.querySelectorAll('[data-fill="' + key + '"]').forEach(function (el) { el.textContent = value; });
   };
 
-  var acomp = ['Solo yo', '+1', '+2'][data.acompanantes] || 'Solo yo';
   var dni = String(data.dni || '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
   fill('saludo', ', ' + data.nombre);
   fill('email', data.email);
   fill('nombre', data.nombre + ' ' + data.apellido);
   fill('dni', dni || '—');
-  fill('acompanantes', acomp);
   fill('codigo', data.codigo);
 
   // QR con el código de la entrada

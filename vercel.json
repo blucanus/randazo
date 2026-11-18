@@ -3,12 +3,24 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/e/randazo", "destination": "/index.html" }
+    {
+      "source": "/api/register",
+      "destination": "https://eventos.hands.com.ar/api/register"
+    },
+    {
+      "source": "/e/randazo",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/assets/img/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
     }
   ]
 }

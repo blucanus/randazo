@@ -51,6 +51,7 @@ a:hover { color: var(--lime-soft); }
 }
 .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 0, 0, .28); background: var(--ink-hover); color: #fff; }
 .btn:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+.btn:disabled { opacity: .75; cursor: progress; transform: none; box-shadow: none; }
 .btn svg { flex: 0 0 auto; }
 .btn--sm { min-height: 48px; padding: 0 22px; font-size: 14px; font-weight: 800; }
 .btn--lg { min-height: 64px; padding: 0 30px; font-size: 16px; box-shadow: 0 8px 22px rgba(0, 0, 0, .18); }
@@ -154,6 +155,7 @@ a:hover { color: var(--lime-soft); }
 .thanks__check { display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 999px; background: var(--lime); }
 .thanks__title { margin: 0; font-stretch: 125%; font-weight: 900; font-size: 28px; line-height: 1; text-transform: uppercase; }
 .thanks__title span { color: var(--lime); }
+.thanks__title [data-fill] { color: inherit; }
 .thanks__lead { margin: 0; font-size: 16px; line-height: 1.5; color: var(--muted-dark); }
 .thanks__lead strong { color: #fff; font-weight: 700; overflow-wrap: anywhere; }
 
@@ -172,9 +174,10 @@ a:hover { color: var(--lime-soft); }
 .ticket__cut::before { left: -36px; }
 .ticket__cut::after { right: -36px; }
 .ticket__bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 22px 22px; }
-.ticket__qr { background: #fff; border-radius: 16px; padding: 14px; }
-.ticket__qr img, .ticket__qr svg { display: block; width: 196px; height: 196px; }
-.ticket__code { margin: 0; font-stretch: 75%; font-weight: 700; font-size: 16px; letter-spacing: .14em; text-transform: uppercase; }
+.ticket__mail { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 4px 0 2px; }
+.ticket__mail-icon { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 16px; background: #fff; margin-bottom: 4px; }
+.ticket__mail-title { margin: 0; font-stretch: 125%; font-weight: 900; font-size: 18px; line-height: 1.1; text-transform: uppercase; }
+.ticket__mail-text { margin: 0; max-width: 28ch; font-size: 15px; line-height: 1.45; color: var(--muted-light); }
 .ticket__strip { margin: 6px 0 0; align-self: stretch; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 16px; border-top: 1px solid rgba(45, 45, 45, .25); }
 .ticket__strip dt { font-size: 12px; }
 .ticket__strip dd { margin: 0; font-stretch: 125%; font-weight: 900; font-size: 17px; }
@@ -182,7 +185,6 @@ a:hover { color: var(--lime-soft); }
 .thanks__actions { display: flex; flex-direction: column; gap: 12px; }
 .thanks__actions .btn { min-height: 56px; border-radius: 14px; font-size: 15px; }
 .thanks__foot { margin: 0; font-size: 14px; line-height: 1.5; text-align: center; color: var(--muted-label); }
-.demo-flag { margin: 0; font-size: 12px; text-align: center; color: #8d8d8a; }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 760px) {

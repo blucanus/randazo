@@ -1,11 +1,18 @@
-/* GR 100.000 — formulario de inscripción (versión demo, sin backend) */
+/* GR 100.000 — formulario de inscripción
+ * Envía los datos a Hands Eventos (POST /api/register, proxiado por vercel.json a eventos.hands.com.ar).
+ * La plataforma guarda la inscripción y manda la entrada con QR por email.
+ */
 (function () {
   'use strict';
+
+  var EVENT_SLUG = 'randazzo';
 
   var form = document.getElementById('form-inscripcion');
   if (!form) return;
 
   var alertBox = document.getElementById('form-alert');
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var submitLabel = submitBtn ? submitBtn.innerHTML : '';
 
   var onlyDigits = function (v) { return (v || '').replace(/\D+/g, ''); };
 
@@ -45,31 +52,73 @@
     });
   });
 
-  function demoCode() {
-    var n = Math.floor(Math.random() * 900000) + 100000;
-    return 'GR-' + n;
+  function showAlert(msg) {
+    alertBox.textContent = msg;
+    alertBox.classList.add('is-visible');
+  }
+
+  function setSending(sending) {
+    if (!submitBtn) return;
+    submitBtn.disabled = sending;
+    submitBtn.setAttribute('aria-busy', sending ? 'true' : 'false');
+    submitBtn.innerHTML = sending ? 'Enviando…' : submitLabel;
+  }
+
+  // Mensajes de la API de Hands Eventos, en el tono de la landing
+  function friendly(msg) {
+    if (/ya está inscripto/i.test(msg)) return 'Ese email ya está anotado. Revisá tu casilla (y spam): ahí está tu entrada con QR.';
+    if (/cupo completo/i.test(msg)) return 'Se completó el cupo del evento. ¡Gracias por tu interés!';
+    if (/no encontrado|cerrado/i.test(msg)) return 'La inscripción no está disponible en este momento.';
+    return msg || 'No pudimos registrar tu inscripción. Probá de nuevo en unos minutos.';
   }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var firstBad = validate();
     if (firstBad) {
-      alertBox.classList.add('is-visible');
+      showAlert('Revisá los campos marcados.');
       firstBad.focus();
       return;
     }
     alertBox.classList.remove('is-visible');
 
-    var data = {
+    var payload = {
+      slug: EVENT_SLUG,
       nombre: form.elements.nombre.value.trim(),
       apellido: form.elements.apellido.value.trim(),
+      email: form.elements.email.value.trim().toLowerCase(),
+      // Claves = campos extra del evento en Hands Eventos ("DNI" y "WhatsApp")
       dni: onlyDigits(form.elements.dni.value),
-      email: form.elements.email.value.trim(),
-      codigo: demoCode()
+      whatsapp: '+549' + onlyDigits(form.elements.whatsapp.value)
     };
 
-    // TODO producción: enviar `data` (+ whatsapp) a la API de eventos.hands.com.ar
-    try { sessionStorage.setItem('gr100k_entrada', JSON.stringify(data)); } catch (err) { /* modo privado */ }
-    window.location.href = '/gracias';
+    setSending(true);
+    fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return { ok: false }; });
+      })
+      .then(function (res) {
+        if (res && res.ok) {
+          // Evento pago (no aplica hoy): la plataforma devuelve el link de Mercado Pago
+          if (res.pago && res.url) { window.location.href = res.url; return; }
+          try {
+            sessionStorage.setItem('gr100k_entrada', JSON.stringify({
+              nombre: payload.nombre, apellido: payload.apellido, email: payload.email, dni: payload.dni
+            }));
+          } catch (err) { /* modo privado */ }
+          window.location.href = '/gracias';
+          return;
+        }
+        setSending(false);
+        showAlert(friendly(res && res.message));
+      })
+      .catch(function () {
+        setSending(false);
+        showAlert('No pudimos conectarnos. Revisá tu conexión y probá de nuevo.');
+      });
   });
 })();

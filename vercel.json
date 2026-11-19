@@ -8,6 +8,10 @@
       "destination": "https://eventos.hands.com.ar/api/register"
     },
     {
+      "source": "/api/events",
+      "destination": "https://eventos.hands.com.ar/api/events"
+    },
+    {
       "source": "/e/randazzo",
       "destination": "/"
     },

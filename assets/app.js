@@ -110,7 +110,7 @@
               nombre: payload.nombre, apellido: payload.apellido, email: payload.email, dni: payload.dni
             }));
           } catch (err) { /* modo privado */ }
-          window.location.href = '/gracias';
+          window.location.href = '/e/randazzo/gracias';
           return;
         }
         setSending(false);

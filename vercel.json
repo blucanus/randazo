@@ -12,6 +12,10 @@
       "destination": "https://eventos.hands.com.ar/api/events"
     },
     {
+      "source": "/api/invitaciones",
+      "destination": "https://eventos.hands.com.ar/api/invitaciones"
+    },
+    {
       "source": "/e/randazzo",
       "destination": "/"
     },

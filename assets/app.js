@@ -22,8 +22,12 @@
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   // ---- Invitación personal (?inv=token) ----
-  var INV = '';
-  try { INV = (new URLSearchParams(window.location.search).get('inv') || '').trim(); } catch (err) { INV = ''; }
+  var INV = '', RESPUESTA = '';
+  try {
+    var qs = new URLSearchParams(window.location.search);
+    INV = (qs.get('inv') || '').trim();
+    RESPUESTA = (qs.get('r') || '').trim().toLowerCase(); // "no" = botón "No asisto" del mail
+  } catch (err) { INV = ''; }
   var invitacionOk = false;
 
   function fijarNombre(bloquear, nombre, apellido) {
@@ -152,6 +156,60 @@
     if (submitBtn) submitBtn.disabled = true;
   }
 
+  // ---- "No asisto" desde el mail ----
+  // Se pide confirmar con un clic (los antivirus de mail abren los links solos) y después no recibe recordatorios.
+  // "Quiero asistir" vuelve al formulario y saca la respuesta negativa.
+  function responder(asiste) {
+    return fetch('/api/invitaciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ accion: 'responder', slug: EVENT_SLUG, inv: INV, asiste: asiste })
+    }).then(function (r) { return r.json(); }).catch(function () { return { ok: false }; });
+  }
+
+  function mostrarNoAsisto(iv, preguntar) {
+    var titulo = form.querySelector('.form__title');
+    var sub = form.querySelector('.form__sub');
+    var previo = form.querySelector('.form__decline');
+    if (previo) previo.parentNode.removeChild(previo);
+    form.classList.add('is-blocked');
+    if (titulo) titulo.textContent = 'Tu respuesta';
+    if (sub) sub.style.display = 'none';
+
+    var box = el('div', { 'class': 'form__blocked form__decline', role: 'status' });
+    box.appendChild(el('p', { 'class': 'form__blocked-title' }, preguntar ? iv.nombre + ', ¿no vas a poder venir?' : 'Gracias por avisarnos, ' + iv.nombre));
+    box.appendChild(el('p', { 'class': 'form__blocked-text' }, preguntar
+      ? 'Si lo confirmás, no te vamos a mandar más recordatorios.'
+      : 'No te vamos a mandar más recordatorios. Si cambiás de idea, todavía podés confirmar tu asistencia.'));
+    var acciones = el('div', { 'class': 'form__decline-actions' });
+    var msg = el('p', { 'class': 'form__decline-msg', role: 'alert' });
+    if (preguntar) {
+      var no = el('button', { type: 'button', 'class': 'btn btn--sm' }, 'Confirmar que no asisto');
+      no.addEventListener('click', function () {
+        no.disabled = true;
+        responder(false).then(function (res) {
+          if (res && res.ok) { iv.rechazada = true; mostrarNoAsisto(iv, false); return; }
+          no.disabled = false;
+          msg.textContent = (res && res.message) || 'No pudimos guardar tu respuesta. Probá de nuevo.';
+        });
+      });
+      acciones.appendChild(no);
+    }
+    var si = el('button', { type: 'button', 'class': preguntar ? 'btn-link' : 'btn btn--sm' }, preguntar ? 'Me equivoqué, quiero asistir' : 'Quiero asistir');
+    si.addEventListener('click', function () {
+      if (iv.rechazada) { responder(true); iv.rechazada = false; }
+      box.parentNode.removeChild(box);
+      form.classList.remove('is-blocked');
+      if (titulo) titulo.textContent = 'Confirmá tu asistencia';
+      if (sub) sub.style.display = '';
+      form.elements.dni.focus();
+    });
+    acciones.appendChild(si);
+    box.appendChild(acciones);
+    box.appendChild(msg);
+    form.querySelector('.form__head').insertAdjacentElement('afterend', box);
+  }
+
   function aplicarInvitacion(ev) {
     var iv = ev && ev.invitado;
     var solo = !!(ev && ev.invitacion && ev.invitacion.soloInvitados);
@@ -164,14 +222,16 @@
       if (sub) sub.textContent = iv.prueba
         ? 'Invitación de prueba: así lo ve cada invitado. Este formulario no se envía.'
         : 'Tu nombre ya está cargado. Completá tus datos y confirmá tu lugar.';
+      // Con "Sí, asisto" va directo al formulario, aunque antes haya respondido que no
+      if (RESPUESTA === 'no') mostrarNoAsisto(iv, !iv.rechazada);
       return;
     }
     if (INV && !iv) fijarNombre(false); // la plataforma no informó el invitado: formulario normal
     if (iv && iv.usada) return cerrarFormulario('Esta invitación ya se usó', 'Ya hay una inscripción con este link. Revisá tu mail (y la carpeta de spam): ahí está tu confirmación.');
-    if (iv) return cerrarFormulario('El link no es válido', 'Abrí de nuevo el botón “Confirmar asistencia” del mail de invitación.');
+    if (iv) return cerrarFormulario('El link no es válido', 'Abrí de nuevo el botón “Sí, asisto” del mail de invitación.');
     if (solo) {
       if (eyebrow) eyebrow.textContent = 'Solo con invitación';
-      cerrarFormulario('Inscripción solo con invitación', 'Si recibiste el mail de invitación, entrá desde el botón “Confirmar asistencia”: tu nombre ya va a estar cargado.');
+      cerrarFormulario('Inscripción solo con invitación', 'Si recibiste el mail de invitación, entrá desde el botón “Sí, asisto”: tu nombre ya va a estar cargado.');
     }
   }
 

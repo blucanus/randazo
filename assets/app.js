@@ -1,6 +1,8 @@
 /* GR 100.000 — formulario de inscripción
  * Envía los datos a Hands Eventos (POST /api/register, proxiado por vercel.json a eventos.hands.com.ar).
  * Los campos extra que se agregan al evento en el panel (ej. restricción alimentaria) se dibujan solos.
+ * Invitaciones: el link del mail (?inv=token) trae nombre y apellido fijos; con "solo invitados"
+ * el formulario se cierra si no hay link personal.
  */
 (function () {
   'use strict';
@@ -19,9 +21,28 @@
   var onlyDigits = function (v) { return (v || '').replace(/\D+/g, ''); };
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+  // ---- Invitación personal (?inv=token) ----
+  var INV = '';
+  try { INV = (new URLSearchParams(window.location.search).get('inv') || '').trim(); } catch (err) { INV = ''; }
+  var invitacionOk = false;
+
+  function fijarNombre(bloquear, nombre, apellido) {
+    [['nombre', nombre], ['apellido', apellido]].forEach(function (par) {
+      var input = form.elements[par[0]];
+      var wrap = form.querySelector('[data-field="' + par[0] + '"]');
+      input.readOnly = bloquear;
+      input.setAttribute('aria-readonly', bloquear ? 'true' : 'false');
+      if (wrap) wrap.classList.toggle('is-locked', bloquear);
+      if (par[1] != null) input.value = par[1];
+      input.placeholder = bloquear && par[1] == null ? 'Cargando…' : (par[0] === 'nombre' ? 'Tu nombre' : 'Tu apellido');
+    });
+  }
+  // Mientras se valida el link, nombre y apellido quedan bloqueados
+  if (INV) fijarNombre(true);
+
   var rules = {
-    nombre: function (v) { return v.trim().length >= 2; },
-    apellido: function (v) { return v.trim().length >= 2; },
+    nombre: function (v) { return invitacionOk || v.trim().length >= 2; },
+    apellido: function (v) { return invitacionOk || v.trim().length >= 2; },
     dni: function (v) { var d = onlyDigits(v); return d.length >= 7 && d.length <= 8; },
     email: function (v) { return EMAIL_RE.test(v.trim()); },
     whatsapp: function (v) { return onlyDigits(v).length === 10; }
@@ -121,14 +142,52 @@
     return ok;
   }
 
+  // Cierra el formulario con un aviso (invitación usada o inválida, o evento solo con invitación)
+  function cerrarFormulario(titulo, texto) {
+    form.classList.add('is-blocked');
+    var box = el('div', { 'class': 'form__blocked', role: 'status' });
+    box.appendChild(el('p', { 'class': 'form__blocked-title' }, titulo));
+    box.appendChild(el('p', { 'class': 'form__blocked-text' }, texto));
+    form.querySelector('.form__head').insertAdjacentElement('afterend', box);
+    if (submitBtn) submitBtn.disabled = true;
+  }
+
+  function aplicarInvitacion(ev) {
+    var iv = ev && ev.invitado;
+    var solo = !!(ev && ev.invitacion && ev.invitacion.soloInvitados);
+    var eyebrow = document.getElementById('insc-eyebrow');
+    var sub = form.querySelector('.form__sub');
+    if (iv && iv.valida && !iv.usada) {
+      invitacionOk = true;
+      fijarNombre(true, iv.nombre, iv.apellido);
+      if (eyebrow) eyebrow.textContent = 'Invitación personal';
+      if (sub) sub.textContent = iv.prueba
+        ? 'Invitación de prueba: así lo ve cada invitado. Este formulario no se envía.'
+        : 'Tu nombre ya está cargado. Completá tus datos y confirmá tu lugar.';
+      return;
+    }
+    if (INV && !iv) fijarNombre(false); // la plataforma no informó el invitado: formulario normal
+    if (iv && iv.usada) return cerrarFormulario('Esta invitación ya se usó', 'Ya hay una inscripción con este link. Revisá tu mail (y la carpeta de spam): ahí está tu confirmación.');
+    if (iv) return cerrarFormulario('El link no es válido', 'Abrí de nuevo el botón “Confirmar asistencia” del mail de invitación.');
+    if (solo) {
+      if (eyebrow) eyebrow.textContent = 'Solo con invitación';
+      cerrarFormulario('Inscripción solo con invitación', 'Si recibiste el mail de invitación, entrá desde el botón “Confirmar asistencia”: tu nombre ya va a estar cargado.');
+    }
+  }
+
   // Si esto falla, igual se puede enviar: la API avisa qué campo falta
-  var cargaCampos = fetch('/api/events?slug=' + EVENT_SLUG, { headers: { Accept: 'application/json' } })
+  var cargaCampos = fetch('/api/events?slug=' + EVENT_SLUG + (INV ? '&inv=' + encodeURIComponent(INV) : ''), { headers: { Accept: 'application/json' } })
     .then(function (r) { return r.json(); })
     .then(function (res) {
-      extras = ((res && res.data && res.data.campos) || []).filter(function (c) { return NATIVOS.indexOf(c.key) === -1; });
+      var ev = (res && res.data) || {};
+      extras = (ev.campos || []).filter(function (c) { return NATIVOS.indexOf(c.key) === -1; });
       extras.forEach(renderCampo);
+      aplicarInvitacion(ev);
     })
-    .catch(function () { extras = []; });
+    .catch(function () {
+      extras = [];
+      if (INV) fijarNombre(false);
+    });
 
   // ---- Validación y envío ----
   function validate() {
@@ -165,6 +224,7 @@
   }
 
   function enviar() {
+    if (form.classList.contains('is-blocked')) return;
     var firstBad = validate();
     if (firstBad) {
       showAlert('Revisá los campos marcados.');
@@ -181,6 +241,7 @@
       dni: onlyDigits(form.elements.dni.value),
       whatsapp: '+549' + onlyDigits(form.elements.whatsapp.value)
     };
+    if (invitacionOk) payload.inv = INV; // el servidor toma nombre y apellido de la invitación
     extras.forEach(function (c) {
       var v = valorExtra(c);
       payload[c.key] = c.type === 'number' && v !== '' ? v.replace(',', '.') : v;

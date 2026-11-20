@@ -143,6 +143,14 @@ textarea.field__input { height: auto; min-height: 104px; padding: 14px 16px; lin
 .field--check .field__label { font-stretch: 100%; font-weight: 600; font-size: 15px; letter-spacing: 0; text-transform: none; line-height: 1.4; }
 .field__check-text { display: flex; flex-direction: column; gap: 4px; }
 
+/* Invitación personal: nombre y apellido fijos; aviso cuando el formulario se cierra */
+.field.is-locked .field__input { background-color: rgba(255, 255, 255, .5); border-style: dashed; font-weight: 700; cursor: not-allowed; padding-right: 44px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232d2d2d' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10' rx='2'/%3E%3Cpath d='M8 10.5V7.5a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
+.field.is-locked .field__input:focus { border-color: var(--field-border); box-shadow: none; }
+.form.is-blocked > :not(.form__head):not(.form__blocked) { display: none; }
+.form__blocked { padding: 18px 20px; border-radius: 14px; background: rgba(255, 255, 255, .72); border: 1.5px solid var(--ink); }
+.form__blocked-title { margin: 0 0 6px; font-stretch: 75%; font-weight: 800; font-size: 19px; letter-spacing: .04em; text-transform: uppercase; }
+.form__blocked-text { margin: 0; font-size: 16px; line-height: 1.45; color: var(--muted-light); }
+
 .form__note { margin: -6px 0 0; font-size: 14px; line-height: 1.45; text-align: center; color: var(--muted-light); }
 .form__alert { margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(179, 38, 30, .1); border: 1.5px solid var(--error); color: var(--error); font-weight: 700; font-size: 15px; display: none; }
 .form__alert.is-visible { display: block; }
